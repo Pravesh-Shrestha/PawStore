@@ -18,3 +18,5 @@ const errorHandler = (err: Error, req: Request, res: Response, next: NextFunctio
 };
 
 export { notFound, errorHandler };
+
+// Extended error handling and mappings
