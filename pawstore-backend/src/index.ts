@@ -1,0 +1,17 @@
+import dotenv from "dotenv"; import path from "path";
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
+import express from "express"; import cors from "cors"; import helmet from "helmet";
+import cookieParser from "cookie-parser"; import dbConnect from "./database/db";
+import { notFound, errorHandler } from "./middleware/errorMiddleware";
+import userRoutes from "./routes/userRoutes";
+const PORT = process.env.PORT || 5000; const app = express();
+dbConnect();
+app.use(helmet());
+app.use(cors({ origin: ["http://localhost:5173", "http://localhost:3000"], credentials: true }));
+app.use(cookieParser());
+app.use(express.json({ limit: "10kb" }));
+app.use(express.urlencoded({ extended: true, limit: "10kb" }));
+app.get("/", (req, res) => res.json({ message: "Welcome to Pawstore API", version: "1.0.0" }));
+app.use("/api/users", userRoutes);
+app.use(notFound); app.use(errorHandler);
+app.listen(PORT, () => console.log("Server running on port " + PORT));
