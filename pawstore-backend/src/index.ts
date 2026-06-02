@@ -4,6 +4,7 @@ import express from "express"; import cors from "cors"; import helmet from "helm
 import cookieParser from "cookie-parser"; import dbConnect from "./database/db";
 import { notFound, errorHandler } from "./middleware/errorMiddleware";
 import userRoutes from "./routes/userRoutes";
+import breedRoutes from "./routes/breedRoutes";
 const PORT = process.env.PORT || 5000; const app = express();
 dbConnect();
 app.use(helmet());
@@ -13,5 +14,6 @@ app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 app.get("/", (req, res) => res.json({ message: "Welcome to Pawstore API", version: "1.0.0" }));
 app.use("/api/users", userRoutes);
+app.use("/api/breeds", breedRoutes);
 app.use(notFound); app.use(errorHandler);
 app.listen(PORT, () => console.log("Server running on port " + PORT));
