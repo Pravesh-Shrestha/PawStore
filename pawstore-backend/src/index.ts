@@ -6,6 +6,7 @@ import { notFound, errorHandler } from "./middleware/errorMiddleware";
 import userRoutes from "./routes/userRoutes";
 import breedRoutes from "./routes/breedRoutes";
 import accessoryRoutes from "./routes/accessoryRoutes";
+import blogRoutes from "./routes/blogRoutes";
 const PORT = process.env.PORT || 5000; const app = express();
 dbConnect();
 app.use(helmet());
@@ -17,5 +18,6 @@ app.get("/", (req, res) => res.json({ message: "Welcome to Pawstore API", versio
 app.use("/api/users", userRoutes);
 app.use("/api/breeds", breedRoutes);
 app.use("/api/accessories", accessoryRoutes);
+app.use("/api/blogs", blogRoutes);
 app.use(notFound); app.use(errorHandler);
 app.listen(PORT, () => console.log("Server running on port " + PORT));
