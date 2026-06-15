@@ -1,6 +1,25 @@
-import express from "express";
+import express from 'express';
 const router = express.Router();
-import { getBlogs, getBlogById, createBlog, updateBlog, deleteBlog } from "../controllers/blogController";
-router.route("/").get(getBlogs).post(createBlog);
-router.route("/:id").get(getBlogById).put(updateBlog).delete(deleteBlog);
+
+
+import { getBlogs,
+  getFeaturedBlogs,
+  getBlogById,
+  createBlog,
+  updateBlog,
+  deleteBlog,
+ } from "../controllers/blogController";
+import { protect, admin  } from "../middleware/authMiddleware";
+
+router.route("/").get(getBlogs).post(protect, admin, createBlog);
+router.route("/featured").get(getFeaturedBlogs);
+router
+  .route("/:id")
+  .get(getBlogById)
+  .put(protect, admin, updateBlog)
+  .delete(protect, admin, deleteBlog);
+
 export default router;
+
+
+
