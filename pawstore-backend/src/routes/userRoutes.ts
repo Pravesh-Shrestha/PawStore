@@ -1,11 +1,11 @@
 import express from "express"; const router = express.Router();
-import { registerUser, authUser, logoutUser } from "../controllers/userController";
-import { protect } from "../middleware/authMiddleware";
+import { registerUser, authUser, logoutUser, getUserProfile, updateUserProfile, getUsers, deleteUser, unlockUser } from "../controllers/userController";
+import { protect, admin } from "../middleware/authMiddleware";
 router.post("/", registerUser);
 router.post("/login", authUser);
 router.post("/logout", logoutUser);
-router.get("/profile", protect, (req, res) => {
-  const user = req.user as any;
-  res.json({ _id: user._id, name: user.name, email: user.email, isAdmin: user.isAdmin });
-});
+router.route("/profile").get(protect, getUserProfile).put(protect, updateUserProfile);
+router.route("/").get(protect, admin, getUsers);
+router.route("/:id").delete(protect, admin, deleteUser);
+router.route("/:id/unlock").put(protect, admin, unlockUser);
 export default router;
