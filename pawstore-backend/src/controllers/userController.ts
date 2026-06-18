@@ -3,11 +3,27 @@ import { Request, Response } from "express";
 import User from "../models/userModel";
 import { generateToken, setTokenCookie, clearTokenCookie } from "../utils/generateToken";
 
+export function validatePasswordPolicy(password: string): string[] {
+  const errors = [];
+  if (password.length < 12) errors.push("Password must be at least 12 characters long");
+  if (password.length > 128) errors.push("Password must not exceed 128 characters");
+  if (!/[A-Z]/.test(password)) errors.push("Password must contain at least one uppercase letter");
+  if (!/[a-z]/.test(password)) errors.push("Password must contain at least one lowercase letter");
+  if (!/[0-9]/.test(password)) errors.push("Password must contain at least one number");
+  if (password.replace(/[a-zA-Z0-9]/g, "").length === 0) errors.push("Password must contain at least one special character");
+  return errors;
+}
+
 const registerUser = asyncHandler(async (req: Request, res: Response) => {
   const { name, email, password } = req.body;
   if (!name || !email || !password) {
     res.status(400);
     throw new Error("Please provide name, email, and password");
+  }
+  const passwordErrors = validatePasswordPolicy(password);
+  if (passwordErrors.length > 0) {
+    res.status(400);
+    throw new Error(passwordErrors.join("; "));
   }
   const userExists = await User.findOne({ email: email.toLowerCase().trim() });
   if (userExists) {
@@ -63,8 +79,7 @@ const logoutUser = asyncHandler(async (req: Request, res: Response) => {
   res.json({ message: "Logged out successfully" });
 });
 
-const getUserProfile = asyncHandler(async (req, res) => {
-  const user = await User.findById((req.user as any)._id).select("-password");
+const getUserProfile = asyncHandler(async (req, res) => {  const user = await User.findById((req.user as any)._id).select("-password");
   if (user) {
     res.json({
       _id: user._id,
@@ -84,6 +99,11 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     user.name = req.body.name || user.name;
     user.email = req.body.email || user.email;
     if (req.body.password) {
+      const passwordErrors = validatePasswordPolicy(req.body.password);
+      if (passwordErrors.length > 0) {
+        res.status(400);
+        throw new Error(passwordErrors.join("; "));
+      }
       user.password = req.body.password;
     }
     const updatedUser = await user.save();
