@@ -1,6 +1,11 @@
 import mongoose, { Document, Schema } from "mongoose";
 import bcrypt from "bcryptjs";
 
+export interface IPasswordHistory {
+  password: string;
+  changedAt: Date;
+}
+
 export interface IUser extends Document {
   name: string;
   email: string;
@@ -8,8 +13,11 @@ export interface IUser extends Document {
   isAdmin: boolean;
   passwordChangedAt: Date | null;
   passwordExpiresAt: Date | null;
+  passwordHistory: IPasswordHistory[];
   matchPassword(enteredPassword: string): Promise<boolean>;
   isPasswordExpired(): boolean;
+  isPasswordReused(newPassword: string): Promise<boolean>;
+  addToPasswordHistory(password: string): Promise<void>;
 }
 
 const userSchema = new Schema<IUser>(
@@ -20,6 +28,12 @@ const userSchema = new Schema<IUser>(
     isAdmin: { type: Boolean, required: true, default: false },
     passwordChangedAt: { type: Date, default: null },
     passwordExpiresAt: { type: Date, default: null },
+    passwordHistory: [
+      {
+        password: { type: String },
+        changedAt: { type: Date },
+      },
+    ],
   },
   { timestamps: true }
 );
@@ -31,6 +45,25 @@ userSchema.methods.matchPassword = async function (this: IUser, enteredPassword:
 userSchema.methods.isPasswordExpired = function (this: IUser): boolean {
   if (!this.passwordExpiresAt) return false;
   return Date.now() > new Date(this.passwordExpiresAt).getTime();
+};
+
+userSchema.methods.isPasswordReused = async function (this: IUser, newPassword: string): Promise<boolean> {
+  for (const entry of this.passwordHistory) {
+    if (entry.password && (await bcrypt.compare(newPassword, entry.password))) {
+      return true;
+    }
+  }
+  return false;
+};
+
+userSchema.methods.addToPasswordHistory = async function (this: IUser, password: string): Promise<void> {
+  this.passwordHistory.push({
+    password,
+    changedAt: new Date(),
+  });
+  if (this.passwordHistory.length > 5) {
+    this.passwordHistory = this.passwordHistory.slice(-5);
+  }
 };
 
 userSchema.pre<IUser>("save", async function (next) {

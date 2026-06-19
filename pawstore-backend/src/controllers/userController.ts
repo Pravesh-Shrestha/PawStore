@@ -36,6 +36,8 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
     password,
   });
   if (user) {
+    await user.addToPasswordHistory(password);
+    await user.save();
     const token = generateToken(user._id.toString());
     setTokenCookie(res, token);
     res.status(201).json({
@@ -104,6 +106,11 @@ const updateUserProfile = asyncHandler(async (req, res) => {
         res.status(400);
         throw new Error(passwordErrors.join("; "));
       }
+      if (await user.isPasswordReused(req.body.password)) {
+        res.status(400);
+        throw new Error("Cannot reuse any of your last 5 passwords");
+      }
+      await user.addToPasswordHistory(req.body.password);
       user.password = req.body.password;
     }
     const updatedUser = await user.save();
