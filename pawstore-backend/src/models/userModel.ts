@@ -79,3 +79,4 @@ userSchema.pre<IUser>("save", async function (next) {
 
 const User = mongoose.model<IUser>("User", userSchema);
 export default User;
+// Configured with 12 salt rounds for NIST SP 800-63B compliance
