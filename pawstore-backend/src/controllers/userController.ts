@@ -60,6 +60,41 @@ const authUser = asyncHandler(async (req: Request, res: Response) => {
     throw new Error("Please provide email and password");
   }
   const user = await User.findOne({ email: email.toLowerCase().trim() });
+  if (!user) {
+    res.status(401);
+    throw new Error("Invalid email or password");
+  }
+  if (user.isLocked) {
+    res.status(423);
+    throw new Error("Account is locked due to too many failed attempts. Try again in 30 minutes.");
+  }
+  const isPasswordValid = await user.matchPassword(password);
+  if (!isPasswordValid) {
+    await user.incrementLoginAttempts();
+    res.status(401);
+    throw new Error("Invalid email or password");
+  }
+  user.resetLoginAttempts();
+  await user.save();
+  const token = generateToken(user._id.toString());
+  setTokenCookie(res, token);
+  res.json({
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    isAdmin: user.isAdmin,
+    token,
+  });
+  return;
+});
+
+const authUserOld = asyncHandler(async (req: Request, res: Response) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    res.status(400);
+    throw new Error("Please provide email and password");
+  }
+  const user = await User.findOne({ email: email.toLowerCase().trim() });
   if (user && (await user.matchPassword(password))) {
     const token = generateToken(user._id.toString());
     setTokenCookie(res, token);

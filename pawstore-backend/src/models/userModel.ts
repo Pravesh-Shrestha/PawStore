@@ -14,10 +14,17 @@ export interface IUser extends Document {
   passwordChangedAt: Date | null;
   passwordExpiresAt: Date | null;
   passwordHistory: IPasswordHistory[];
+  loginAttempts: number;
+  lockUntil: Date | null;
+  accountLocked: boolean;
+  lastFailedLogin: Date | null;
+  isLocked: boolean;
   matchPassword(enteredPassword: string): Promise<boolean>;
   isPasswordExpired(): boolean;
   isPasswordReused(newPassword: string): Promise<boolean>;
   addToPasswordHistory(password: string): Promise<void>;
+  incrementLoginAttempts(): Promise<IUser>;
+  resetLoginAttempts(): void;
 }
 
 const userSchema = new Schema<IUser>(
@@ -34,9 +41,20 @@ const userSchema = new Schema<IUser>(
         changedAt: { type: Date },
       },
     ],
+    loginAttempts: { type: Number, default: 0 },
+    lockUntil: { type: Date, default: null },
+    accountLocked: { type: Boolean, default: false },
+    lastFailedLogin: { type: Date },
   },
   { timestamps: true }
 );
+
+userSchema.virtual("isLocked").get(function (this: IUser) {
+  if (this.lockUntil && new Date(this.lockUntil).getTime() > Date.now()) {
+    return true;
+  }
+  return this.accountLocked;
+});
 
 userSchema.methods.matchPassword = async function (this: IUser, enteredPassword: string): Promise<boolean> {
   return await bcrypt.compare(enteredPassword, this.password);
@@ -66,6 +84,28 @@ userSchema.methods.addToPasswordHistory = async function (this: IUser, password:
   }
 };
 
+userSchema.methods.incrementLoginAttempts = async function (this: IUser): Promise<IUser> {
+  if (this.lockUntil && new Date(this.lockUntil).getTime() < Date.now()) {
+    this.loginAttempts = 1;
+    this.lockUntil = null;
+    this.lastFailedLogin = new Date();
+    return this.save();
+  }
+  this.loginAttempts += 1;
+  this.lastFailedLogin = new Date();
+  if (this.loginAttempts >= 5) {
+    this.lockUntil = new Date(Date.now() + 30 * 60 * 1000);
+    this.accountLocked = true;
+  }
+  return this.save();
+};
+
+userSchema.methods.resetLoginAttempts = function (this: IUser): void {
+  this.loginAttempts = 0;
+  this.lockUntil = null;
+  this.accountLocked = false;
+};
+
 userSchema.pre<IUser>("save", async function (next) {
   if (!this.isModified("password")) {
     return next();
@@ -79,4 +119,3 @@ userSchema.pre<IUser>("save", async function (next) {
 
 const User = mongoose.model<IUser>("User", userSchema);
 export default User;
-// Configured with 12 salt rounds for NIST SP 800-63B compliance
