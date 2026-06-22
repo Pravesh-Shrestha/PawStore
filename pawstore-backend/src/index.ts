@@ -12,6 +12,8 @@ import orderRoutes from "./routes/orderRoutes";
 import paymentRoutes from "./routes/paymentRoutes";
 import contactRoutes from "./routes/contactRoutes";
 import newsletterRoutes from "./routes/newsletterRoutes";
+import { publicLimiter, apiLimiter } from "./middleware/rateLimiter";
+
 const PORT = process.env.PORT || 5000; const app = express();
 dbConnect();
 app.use(helmet());
@@ -19,6 +21,17 @@ app.use(cors({ origin: ["http://localhost:5173", "http://localhost:3000"], crede
 app.use(cookieParser());
 app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
+
+app.use("/api/breeds", publicLimiter);
+app.use("/api/accessories", publicLimiter);
+app.use("/api/blogs", publicLimiter);
+app.use("/api/contact", apiLimiter);
+app.use("/api/newsletter", apiLimiter);
+app.use("/api/users", apiLimiter);
+app.use("/api/orders", apiLimiter);
+app.use("/api/cart", apiLimiter);
+app.use("/api/payments", apiLimiter);
+
 app.get("/", (req, res) => res.json({ message: "Welcome to Pawstore API", version: "1.0.0" }));
 app.use("/api/users", userRoutes);
 app.use("/api/breeds", breedRoutes);
