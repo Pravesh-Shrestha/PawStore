@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema } from "mongoose";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 
 export interface IPasswordHistory {
   password: string;
@@ -19,12 +20,17 @@ export interface IUser extends Document {
   accountLocked: boolean;
   lastFailedLogin: Date | null;
   isLocked: boolean;
+  mfaSecret: string | null;
+  mfaEnabled: boolean;
+  mfaMethod: "app" | "none";
+  mfaVerified: boolean;
   matchPassword(enteredPassword: string): Promise<boolean>;
   isPasswordExpired(): boolean;
   isPasswordReused(newPassword: string): Promise<boolean>;
   addToPasswordHistory(password: string): Promise<void>;
   incrementLoginAttempts(): Promise<IUser>;
   resetLoginAttempts(): void;
+  generateMFASecret(): string;
 }
 
 const userSchema = new Schema<IUser>(
@@ -45,6 +51,10 @@ const userSchema = new Schema<IUser>(
     lockUntil: { type: Date, default: null },
     accountLocked: { type: Boolean, default: false },
     lastFailedLogin: { type: Date },
+    mfaSecret: { type: String, default: null },
+    mfaEnabled: { type: Boolean, default: false },
+    mfaMethod: { type: String, enum: ["app", "none"], default: "none" },
+    mfaVerified: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
@@ -100,10 +110,14 @@ userSchema.methods.incrementLoginAttempts = async function (this: IUser): Promis
   return this.save();
 };
 
-userSchema.methods.resetLoginAttempts = function (this: IUser): void {
+userSchema.methods.resetLoginAttempts = function (this: IUser) {
   this.loginAttempts = 0;
   this.lockUntil = null;
   this.accountLocked = false;
+};
+
+userSchema.methods.generateMFASecret = function (this: IUser) {
+  return crypto.randomBytes(20).toString("hex");
 };
 
 userSchema.pre<IUser>("save", async function (next) {

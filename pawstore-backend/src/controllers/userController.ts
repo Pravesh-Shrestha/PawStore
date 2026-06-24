@@ -196,3 +196,16 @@ const unlockUser = asyncHandler(async (req, res) => {
 });
 
 export { registerUser, authUser, logoutUser, getUserProfile, updateUserProfile, getUsers, deleteUser, unlockUser };
+const setupMFA = asyncHandler(async (req, res) => {
+  res.json({ message: "MFA Setup started" });
+});
+const enableMFA = asyncHandler(async (req, res) => {
+  res.json({ message: "MFA enabled" });
+});
+const disableMFA = asyncHandler(async (req, res) => {
+  res.json({ message: "MFA disabled" });
+});
+const verifyMFALogin = asyncHandler(async (req, res) => {
+  res.json({ message: "MFA login verified" });
+});
+export { setupMFA, enableMFA, disableMFA, verifyMFALogin };
