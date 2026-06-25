@@ -12,6 +12,7 @@ import orderRoutes from "./routes/orderRoutes";
 import paymentRoutes from "./routes/paymentRoutes";
 import contactRoutes from "./routes/contactRoutes";
 import newsletterRoutes from "./routes/newsletterRoutes";
+import webAuthnRoutes from "./routes/webAuthnRoutes";
 import { publicLimiter, apiLimiter } from "./middleware/rateLimiter";
 
 const PORT = process.env.PORT || 5000; const app = express();
@@ -33,6 +34,7 @@ app.use("/api/cart", apiLimiter);
 app.use("/api/payments", apiLimiter);
 
 app.get("/", (req, res) => res.json({ message: "Welcome to Pawstore API", version: "1.0.0" }));
+app.use("/api/users/webauthn", webAuthnRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/breeds", breedRoutes);
 app.use("/api/accessories", accessoryRoutes);
