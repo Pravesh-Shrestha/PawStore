@@ -28,3 +28,4 @@ export const admin = (req: Request, res: Response, next: NextFunction) => {
     throw new Error("Not authorized as an admin");
   }
 };
+// Enforced Role-Based Access Control (RBAC)
