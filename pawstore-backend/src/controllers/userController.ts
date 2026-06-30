@@ -38,7 +38,7 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
   if (user) {
     await user.addToPasswordHistory(password);
     await user.save();
-    const token = generateToken(user._id.toString());
+    const token = generateToken(user._id.toString(), user.sessionVersion, req.headers["user-agent"]);
     setTokenCookie(res, token);
     res.status(201).json({
       _id: user._id,
@@ -147,6 +147,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
       }
       await user.addToPasswordHistory(req.body.password);
       user.password = req.body.password;
+      user.sessionVersion += 1;
     }
     const updatedUser = await user.save();
     res.json({

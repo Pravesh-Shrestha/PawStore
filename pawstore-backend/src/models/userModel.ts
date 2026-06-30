@@ -24,6 +24,7 @@ export interface IUser extends Document {
   mfaEnabled: boolean;
   mfaMethod: "app" | "none";
   mfaVerified: boolean;
+  sessionVersion: number;
   matchPassword(enteredPassword: string): Promise<boolean>;
   isPasswordExpired(): boolean;
   isPasswordReused(newPassword: string): Promise<boolean>;
@@ -55,6 +56,7 @@ const userSchema = new Schema<IUser>(
     mfaEnabled: { type: Boolean, default: false },
     mfaMethod: { type: String, enum: ["app", "none"], default: "none" },
     mfaVerified: { type: Boolean, default: false },
+    sessionVersion: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

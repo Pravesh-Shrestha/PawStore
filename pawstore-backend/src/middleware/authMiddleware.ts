@@ -8,11 +8,24 @@ export const protect = asyncHandler(async (req: Request, res: Response, next: Ne
   if (token) {
     try {
       const decoded: any = jwt.verify(token, process.env.JWT_SECRET || "fallback");
-      req.user = await User.findById(decoded.id).select("-password") as any;
+      const user = await User.findById(decoded.id);
+      if (!user) {
+        res.status(401);
+        throw new Error("Not authorized, user not found");
+      }
+      if (decoded.sessionVersion !== user.sessionVersion) {
+        res.status(401);
+        throw new Error("Session expired, please login again");
+      }
+      if (decoded.userAgent !== req.headers["user-agent"]) {
+        res.status(401);
+        throw new Error("Session binding invalid");
+      }
+      req.user = user as any;
       next();
     } catch (error) {
       res.status(401);
-      throw new Error("Not authorized, token failed");
+      throw new Error(error.message || "Not authorized, token failed");
     }
   } else {
     res.status(401);
@@ -28,4 +41,3 @@ export const admin = (req: Request, res: Response, next: NextFunction) => {
     throw new Error("Not authorized as an admin");
   }
 };
-// Enforced Role-Based Access Control (RBAC)
