@@ -112,6 +112,11 @@ const authUserOld = asyncHandler(async (req: Request, res: Response) => {
 });
 
 const logoutUser = asyncHandler(async (req: Request, res: Response) => {
+  const user = await User.findById((req as any).user?._id);
+  if (user) {
+    user.lastLogout = new Date();
+    await user.save();
+  }
   clearTokenCookie(res);
   res.json({ message: "Logged out successfully" });
 });
