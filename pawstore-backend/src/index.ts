@@ -13,7 +13,9 @@ import paymentRoutes from "./routes/paymentRoutes";
 import contactRoutes from "./routes/contactRoutes";
 import newsletterRoutes from "./routes/newsletterRoutes";
 import webAuthnRoutes from "./routes/webAuthnRoutes";
+import ipFilterRoutes from "./routes/ipFilterRoutes";
 import { publicLimiter, apiLimiter } from "./middleware/rateLimiter";
+import { ipFilterMiddleware } from "./middleware/ipFilter";
 
 const PORT = process.env.PORT || 5000; const app = express();
 dbConnect();
@@ -22,6 +24,8 @@ app.use(cors({ origin: ["http://localhost:5173", "http://localhost:3000"], crede
 app.use(cookieParser());
 app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
+
+app.use(ipFilterMiddleware);
 
 app.use("/api/breeds", publicLimiter);
 app.use("/api/accessories", publicLimiter);
@@ -44,5 +48,6 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/newsletter", newsletterRoutes);
+app.use("/api/ip-filter", ipFilterRoutes);
 app.use(notFound); app.use(errorHandler);
 app.listen(PORT, () => console.log("Server running on port " + PORT));
