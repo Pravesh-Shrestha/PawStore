@@ -16,6 +16,7 @@ import webAuthnRoutes from "./routes/webAuthnRoutes";
 import ipFilterRoutes from "./routes/ipFilterRoutes";
 import { publicLimiter, apiLimiter } from "./middleware/rateLimiter";
 import { ipFilterMiddleware } from "./middleware/ipFilter";
+import { requestLogger } from "./utils/activityLogger";
 
 const PORT = process.env.PORT || 5000; const app = express();
 dbConnect();
@@ -36,6 +37,8 @@ app.use("/api/users", apiLimiter);
 app.use("/api/orders", apiLimiter);
 app.use("/api/cart", apiLimiter);
 app.use("/api/payments", apiLimiter);
+
+app.use(requestLogger);
 
 app.get("/", (req, res) => res.json({ message: "Welcome to Pawstore API", version: "1.0.0" }));
 app.use("/api/users/webauthn", webAuthnRoutes);
