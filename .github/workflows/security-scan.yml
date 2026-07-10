@@ -1,0 +1,136 @@
+name: Security Scan & SAST
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1" # Every Monday at 6 AM
+
+jobs:
+  # Static Application Security Testing (SAST)
+  sast-scan:
+    name: SAST Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: |
+            pawstore-backend/package-lock.json
+            Project-PawStore-Frontend/package-lock.json
+
+      # Install dependencies
+      - name: Install Backend Dependencies
+        working-directory: ./pawstore-backend
+        run: npm ci
+
+      - name: Install Frontend Dependencies
+        working-directory: ./Project-PawStore-Frontend
+        run: npm ci
+
+      # ESLint security scanning
+      - name: ESLint Security Scan (Backend)
+        working-directory: ./pawstore-backend
+        run: npx eslint . --ext .js --no-error-on-unmatched-pattern || true
+
+      - name: ESLint Security Scan (Frontend)
+        working-directory: ./Project-PawStore-Frontend
+        run: npx eslint . --ext .js,.jsx --no-error-on-unmatched-pattern || true
+
+      # npm audit for dependency vulnerabilities
+      - name: NPM Audit (Backend)
+        working-directory: ./pawstore-backend
+        run: npx audit-ci --moderate || true
+
+      - name: NPM Audit (Frontend)
+        working-directory: ./Project-PawStore-Frontend
+        run: npx audit-ci --moderate || true
+
+      # Run semantic grep for common security issues
+      - name: Check for Hardcoded Secrets
+        run: |
+          echo "Checking for potential hardcoded secrets..."
+          ! grep -r "api[_-]key\|secret\|password.*=\|-----BEGIN" --include="*.{js,jsx,json,yml,yaml}" --exclude-dir=node_modules --exclude="*.test.*" --exclude="package-lock.json" -i -l pawstore-backend/ Project-PawStore-Frontend/ || echo "WARNING: Potential secrets found"
+
+  # Dependency vulnerability scanning
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Snyk Security Scan
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+      - name: Trivy File System Scan
+        uses: aquasecurity/trivy-action@master
+        continue-on-error: true
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "table"
+          exit-code: "0"
+          severity: "CRITICAL,HIGH"
+          skip-files: "package-lock.json"
+
+  # Lint and code quality
+  lint:
+    name: Lint & Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Backend Dependencies
+        working-directory: ./pawstore-backend
+        run: npm ci
+
+      - name: Install Frontend Dependencies
+        working-directory: ./Project-PawStore-Frontend
+        run: npm ci
+
+      - name: Lint Backend
+        working-directory: ./pawstore-backend
+        run: npx eslint . --ext .js --no-error-on-unmatched-pattern || true
+
+      - name: Lint Frontend
+        working-directory: ./Project-PawStore-Frontend
+        run: npx eslint . --ext .js,.jsx --no-error-on-unmatched-pattern || true
+
+  # Build check
+  build:
+    name: Build Check
+    runs-on: ubuntu-latest
+    needs: [lint]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Build Frontend
+        working-directory: ./Project-PawStore-Frontend
+        run: |
+          npm ci
+          npm run build
