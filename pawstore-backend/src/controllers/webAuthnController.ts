@@ -6,7 +6,7 @@ import {
   generateAuthenticationOptions,
   verifyAuthenticationResponse,
 } from "@simplewebauthn/server";
-import type { AuthenticatorTransportFuture } from "@simplewebauthn/server/esm/types/index.js";
+import type { AuthenticatorTransportFuture } from "@simplewebauthn/types";
 import User from "../models/userModel";
 import WebAuthnCredential from "../models/webAuthnModel";
 import { generateToken, setTokenCookie, clearTokenCookie } from "../utils/generateToken";
