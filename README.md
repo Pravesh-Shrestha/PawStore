@@ -204,39 +204,6 @@ PawStore incorporates the following sustainable development practices:
 
 ---
 
-## 7. Internal Penetration Testing
-
-A formal internal penetration test was conducted following the **OWASP Web Security Testing Guide (WSTG) v4.2** methodology.
-
-### 7.1 Test Scope
-- **Application**: PawStore v2.0.0 (Frontend + Backend API)
-- **Type**: White-box internal penetration test
-- **Coverage**: Authentication, Authorization, Session Management, Input Validation, Business Logic, API Security
-
-### 7.2 Key Findings
-
-| Severity | Count | Status |
-|----------|-------|--------|
-| Critical | 0 | N/A |
-| High | 0 | N/A |
-| Medium | 1 | Remediated |
-| Low | 2 | Remediated |
-| Informational | 2 | Remediated |
-
-### 7.3 Report Location
-
-Full penetration test report with CVSS v3.1 ratings, exploitation paths, remediation steps, and retesting evidence is available at:
-📁 [`/penetration-test/`](./penetration-test/)
-- **Rate limiting**: Prevents resource exhaustion from DoS attacks
-- **Log rotation**: Prevents disk space waste with daily log rotation
-
-### 6.4 Frontend Performance
-- **Tree-shakeable icons**: Individual icon imports prevent entire library downloads
-- **Minified production builds**: Vite's default minification reduces transfer size
-- **Efficient re-renders**: React `useMemo` and `useCallback` prevent unnecessary DOM updates
-
----
-
 ## 7. Quick Start
 
 ### Prerequisites
