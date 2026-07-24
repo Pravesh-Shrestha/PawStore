@@ -9,9 +9,30 @@ on:
     - cron: "0 6 * * 1" # Every Monday at 6 AM
 
 jobs:
-  # Static Application Security Testing (SAST)
+  # CodeQL Static Application Security Testing (SAST)
+  codeql-sast:
+    name: CodeQL SAST Scan
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: 'javascript-typescript'
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  # ESLint & Secret SAST Scan
   sast-scan:
-    name: SAST Scan
+    name: ESLint & Secrets SAST Scan
     runs-on: ubuntu-latest
 
     steps:
@@ -38,11 +59,11 @@ jobs:
       # ESLint security scanning
       - name: ESLint Security Scan (Backend)
         working-directory: ./pawstore-backend
-        run: npx eslint . --ext .js --no-error-on-unmatched-pattern || true
+        run: npx eslint . --ext .js,.ts --no-error-on-unmatched-pattern || true
 
       - name: ESLint Security Scan (Frontend)
         working-directory: ./Project-PawStore-Frontend
-        run: npx eslint . --ext .js,.jsx --no-error-on-unmatched-pattern || true
+        run: npx eslint . --ext .js,.jsx,.ts,.tsx --no-error-on-unmatched-pattern || true
 
       # npm audit for dependency vulnerabilities
       - name: NPM Audit (Backend)
@@ -57,7 +78,7 @@ jobs:
       - name: Check for Hardcoded Secrets
         run: |
           echo "Checking for potential hardcoded secrets..."
-          ! grep -r "api[_-]key\|secret\|password.*=\|-----BEGIN" --include="*.{js,jsx,json,yml,yaml}" --exclude-dir=node_modules --exclude="*.test.*" --exclude="package-lock.json" -i -l pawstore-backend/ Project-PawStore-Frontend/ || echo "WARNING: Potential secrets found"
+          ! grep -r "api[_-]key\|secret\|password.*=\|-----BEGIN" --include="*.{js,jsx,ts,tsx,json,yml,yaml}" --exclude-dir=node_modules --exclude="*.test.*" --exclude="package-lock.json" -i -l pawstore-backend/ Project-PawStore-Frontend/ || echo "WARNING: Potential secrets found"
 
   # Dependency vulnerability scanning
   dependency-scan:
