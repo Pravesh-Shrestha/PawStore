@@ -37,7 +37,8 @@ services:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: 5000
       MONGO_URI: mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD:-secure_password_change_me}@mongodb:27017/pawstore_db?authSource=admin
-      JWT_SECRET: ${JWT_SECRET}
+      JWT_SECRET: ${JWT_SECRET:-834aa7d84ed1a7ea0839645bc14b00608d47e836c32b5083130f13cb150c9f1e}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-c0b8c7b9d8e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f600}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
     ports:
       - "5000:5000"
