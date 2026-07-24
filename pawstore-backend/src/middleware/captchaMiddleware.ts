@@ -3,18 +3,10 @@ import https from "https";
 
 const RECAPTCHA_SECRET_KEY = process.env.RECAPTCHA_SECRET_KEY || "";
 
-/**
- * CAPTCHA verification middleware using Google reCAPTCHA v3.
- * Verifies the reCAPTCHA token sent from the frontend.
- * Applies a minimum score threshold (0.5) to filter out suspicious traffic.
- * Falls back gracefully if CAPTCHA is not configured.
- */
 const verifyCaptcha = async (req: Request, res: Response, next: NextFunction) => {
   const captchaToken = req.body.captchaToken;
 
-  // If CAPTCHA is not configured, allow request through (development mode)
   if (!RECAPTCHA_SECRET_KEY || RECAPTCHA_SECRET_KEY === "6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe") {
-    // Test key from Google — skip verification in dev
     return next();
   }
 
@@ -47,9 +39,6 @@ interface RecaptchaResponse {
   "error-codes"?: string[];
 }
 
-/**
- * Verify the reCAPTCHA token with Google's API
- */
 function verifyRecaptcha(token: string): Promise<RecaptchaResponse> {
   return new Promise((resolve, reject) => {
     const postData = `secret=${encodeURIComponent(RECAPTCHA_SECRET_KEY)}&response=${encodeURIComponent(token)}`;

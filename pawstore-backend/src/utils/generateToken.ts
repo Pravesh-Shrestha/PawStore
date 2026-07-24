@@ -15,9 +15,6 @@ const generateToken = (id: string, sessionVersion: number = 0, userAgent: string
   );
 };
 
-/**
- * Set secure HttpOnly cookie with the JWT token
- */
 const setTokenCookie = (res: Response, token: string): void => {
   res.cookie("token", token, {
     httpOnly: true,
@@ -28,9 +25,6 @@ const setTokenCookie = (res: Response, token: string): void => {
   });
 };
 
-/**
- * Clear the auth cookie
- */
 const clearTokenCookie = (res: Response): void => {
   res.cookie("token", "", {
     httpOnly: true,

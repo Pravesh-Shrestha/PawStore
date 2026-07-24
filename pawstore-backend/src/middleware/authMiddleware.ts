@@ -4,7 +4,6 @@ import { Request, Response, NextFunction } from "express";
 import User, { IUser } from "../models/userModel";
 import { writeLog, logLevels } from "../utils/activityLogger";
 
-// Extend Express Request to include user
 declare global {
   namespace Express {
     interface Request {
@@ -19,7 +18,6 @@ interface DecodedToken extends JwtPayload {
   userAgent?: string;
 }
 
-// Middleware to protect routes with session security
 const protect = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
   let token: string | undefined;
 
@@ -70,7 +68,6 @@ const protect = asyncHandler(async (req: Request, res: Response, next: NextFunct
       throw new Error("Password has expired. Please change your password.");
     }
 
-    // Check if token was issued before last logout (token revocation)
     if (user.lastLogout && decoded.iat) {
       const tokenIssuedAt = decoded.iat * 1000;
       const lastLogoutTime = new Date(user.lastLogout).getTime();
@@ -122,7 +119,6 @@ const protect = asyncHandler(async (req: Request, res: Response, next: NextFunct
   }
 });
 
-// Middleware to check if user is admin
 const admin = (req: Request, res: Response, next: NextFunction) => {
   if (req.user && req.user.isAdmin) {
     next();
@@ -136,4 +132,3 @@ const admin = (req: Request, res: Response, next: NextFunction) => {
 };
 
 export { protect, admin };
-

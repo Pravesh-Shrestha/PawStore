@@ -4,22 +4,10 @@ import { Request, Response, NextFunction } from "express";
 import { monitorEvent } from "./monitoring";
 import AuditLog from "../models/auditLogModel";
 
-// Ensure logs directory exists
 const logsDir = path.join(__dirname, "../../logs");
 if (!fs.existsSync(logsDir)) {
   fs.mkdirSync(logsDir, { recursive: true });
 }
-
-/**
- * Activity logging system for auditing and security review.
- * Logs meaningful user actions without exposing sensitive data.
- * 
- * Log levels:
- * - INFO: General user actions (login, logout, profile update)
- * - WARN: Suspicious activity (failed login, rate limit hit)
- * - ERROR: System errors
- * - SECURITY: Security-sensitive events (MFA changes, password changes)
- */
 
 const logLevels = {
   INFO: "INFO" as const,
@@ -40,9 +28,6 @@ interface LogEntry {
   details: Record<string, any>;
 }
 
-/**
- * Sanitize log data to remove sensitive information
- */
 function sanitizeData(data: Record<string, any>): Record<string, any> {
   if (!data) return {};
   const sanitized = { ...data };
@@ -61,9 +46,6 @@ function sanitizeData(data: Record<string, any>): Record<string, any> {
   return sanitized;
 }
 
-/**
- * Write a log entry to the audit log file
- */
 function writeLog(
   level: LogLevel,
   action: string,
@@ -102,10 +84,8 @@ function writeLog(
     console.log(`🟢 ${consoleMsg}`);
   }
 
-  // Feed critical events into the real-time monitoring system
   monitorEvent(action, logEntry.userId, logEntry.ip, level, details);
 
-  // Also persist to MongoDB for the admin audit log dashboard (fire-and-forget)
   try {
     const auditEntry = new AuditLog({
       timestamp: new Date(timestamp),
@@ -123,20 +103,14 @@ function writeLog(
       details: sanitizeData(details),
     });
     auditEntry.save().catch((err: any) => {
-      // Silently fail - file logging is the fallback
       if (process.env.NODE_ENV === "development") {
         console.error("MongoDB audit log failed:", err.message);
       }
     });
   } catch {
-    // Ignore MongoDB write errors - file logging is sufficient
   }
 }
 
-/**
- * Activity logger middleware - logs all incoming requests for full audit trail
- * Reads user info at response time (after auth middleware has run) for accuracy
- */
 const requestLogger = (req: Request, res: Response, next: NextFunction): void => {
   const originalSend = res.send;
   const startTime = Date.now();
@@ -165,7 +139,6 @@ const requestLogger = (req: Request, res: Response, next: NextFunction): void =>
       ? logLevels.WARN
       : logLevels.INFO;
 
-    // Log all requests for complete audit trail
     writeLog(level, `${req.method} ${req.originalUrl}`, userId, logDetails, req);
 
     return originalSend.call(this, body) as Response;

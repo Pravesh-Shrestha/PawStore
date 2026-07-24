@@ -2,12 +2,6 @@ import https from "https";
 import http from "http";
 import { writeLog, logLevels } from "./activityLogger";
 
-/**
- * Real-time monitoring alert system.
- * Sends alerts for critical security events via webhook (Slack/Discord).
- * Also maintains an in-memory recent events buffer for dashboard display.
- */
-
 interface AlertEvent {
   timestamp: string;
   level: string;
@@ -18,16 +12,12 @@ interface AlertEvent {
   metadata: Record<string, any>;
 }
 
-// In-memory buffer for recent security events (last 100)
 const recentSecurityEvents: AlertEvent[] = [];
 const MAX_EVENTS = 100;
 
 const WEBHOOK_URL = process.env.MONITORING_WEBHOOK_URL || "";
 const ALERT_EMAIL = process.env.ALERT_EMAIL || "";
 
-/**
- * Critical security actions that trigger real-time alerts
- */
 const CRITICAL_ACTIONS = [
   "LOGIN_LOCKED_ACCOUNT",
   "LOGIN_FAILED_WRONG_PASSWORD",
@@ -47,9 +37,6 @@ const CRITICAL_ACTIONS = [
   "WEBHOOK_STOCK_INSUFFICIENT",
 ];
 
-/**
- * Add an event to the in-memory monitoring buffer
- */
 function addEvent(event: AlertEvent): void {
   recentSecurityEvents.unshift(event);
   if (recentSecurityEvents.length > MAX_EVENTS) {
@@ -57,11 +44,7 @@ function addEvent(event: AlertEvent): void {
   }
 }
 
-/**
- * Send a real-time alert for critical security events via webhook
- */
 function sendAlert(event: AlertEvent): void {
-  // Log the alert in the activity log
   writeLog(
     logLevels.SECURITY,
     `ALERT_${event.action}`,
@@ -69,14 +52,12 @@ function sendAlert(event: AlertEvent): void {
     { ...event.metadata, alertMessage: event.message }
   );
 
-  // Send to webhook if configured (Slack, Discord, or custom endpoint)
   if (WEBHOOK_URL) {
     sendWebhookAlert(event).catch((err) => {
       console.error("Failed to send webhook alert:", err.message);
     });
   }
 
-  // Console alert with visual emphasis
   console.error(`\n🚨 SECURITY ALERT: ${event.message}`);
   console.error(`   Action: ${event.action}`);
   console.error(`   User: ${event.userId}`);
@@ -84,9 +65,6 @@ function sendAlert(event: AlertEvent): void {
   console.error(`   Time: ${event.timestamp}\n`);
 }
 
-/**
- * Send alert via webhook (supports Slack, Discord, or generic JSON webhook)
- */
 async function sendWebhookAlert(event: AlertEvent): Promise<void> {
   const payload = JSON.stringify({
     text: `🚨 *PawStore Security Alert*`,
@@ -133,10 +111,6 @@ async function sendWebhookAlert(event: AlertEvent): Promise<void> {
   });
 }
 
-/**
- * Monitor a security event - called from activity logger or controllers
- * Determines if alert should be sent based on action severity and frequency
- */
 function monitorEvent(
   action: string,
   userId: string,
@@ -154,21 +128,18 @@ function monitorEvent(
     metadata,
   };
 
-  // Always add to recent events buffer
   addEvent(event);
 
-  // Send alert for critical security actions
   if (CRITICAL_ACTIONS.includes(action)) {
     sendAlert(event);
   }
 
-  // Alert on repeated failures (3+ within short period)
   if (action === "LOGIN_FAILED_WRONG_PASSWORD") {
     const recentFailures = recentSecurityEvents.filter(
       (e) =>
         e.action === "LOGIN_FAILED_WRONG_PASSWORD" &&
         e.ip === ip &&
-        Date.now() - new Date(e.timestamp).getTime() < 300000 // 5 min window
+        Date.now() - new Date(e.timestamp).getTime() < 300000
     );
     if (recentFailures.length >= 3) {
       console.warn(`⚠️ Repeated login failures detected from IP: ${ip} (${recentFailures.length} attempts)`);
@@ -176,9 +147,6 @@ function monitorEvent(
   }
 }
 
-/**
- * Generate human-readable alert messages
- */
 function getAlertMessage(action: string, metadata: Record<string, any>): string {
   const messages: Record<string, string> = {
     LOGIN_LOCKED_ACCOUNT: `Account locked due to too many failed login attempts${metadata.lockTimeLeft ? ` (unlocks in ${metadata.lockTimeLeft})` : ""}`,
@@ -202,9 +170,6 @@ function getAlertMessage(action: string, metadata: Record<string, any>): string 
   return messages[action] || `Security event: ${action}`;
 }
 
-/**
- * Get recent monitoring events for dashboard display
- */
 function getRecentEvents(limit: number = 50): AlertEvent[] {
   return recentSecurityEvents.slice(0, limit);
 }

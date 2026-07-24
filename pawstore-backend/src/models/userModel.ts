@@ -73,7 +73,6 @@ const userSchema = new Schema<IUser>(
     mfaSecret: {
       type: String,
       default: null,
-      // Encrypt MFA secrets at rest using AES-256-GCM
       set: function (val: string) {
         if (!val || val === null) return val;
         return encrypt(val);
@@ -83,7 +82,7 @@ const userSchema = new Schema<IUser>(
         try {
           return isEncrypted(val) ? decrypt(val) : val;
         } catch {
-          return val; // Return as-is if decryption fails
+          return val;
         }
       },
     },
