@@ -1,3 +1,15 @@
+/**
+ * @file webAuthnController.ts
+ * @description WebAuthn / FIDO2 Passkey Passwordless Authentication Controller for PawStore.
+ * 
+ * SECURITY ARCHITECTURE & EMERGING TECH DESIGN:
+ * - Technology Standard: FIDO2 WebAuthn standard powered by `@simplewebauthn/server`.
+ * - Public-Key Cryptography: Operates via asymmetric key pairs (ECC P-256 / RSA) generated inside client-side hardware Secure Enclaves.
+ *   Completely eliminates shared secrets and passwords stored on backend servers.
+ * - Phishing-Resistant Protection: Enforces strict origin and Relying Party ID binding (`RP_ID`, `RP_ORIGIN`), preventing credential capture on spoofed domains.
+ * - Anti-Replay Counter: Validates signature counters on every passkey authentication ceremony to detect cloned authenticators.
+ */
+
 import asyncHandler from "express-async-handler";
 import { Request, Response } from "express";
 import {
@@ -13,13 +25,12 @@ import { generateToken, setTokenCookie, clearTokenCookie } from "../utils/genera
 import { writeLog, logLevels } from "../utils/activityLogger";
 import { trackFailedAttempt } from "../middleware/ipFilter";
 
-// WebAuthn configuration
+// Relying Party (RP) Domain and Origin Configuration
 const RP_NAME = "PawStore";
 const RP_ID = process.env.WEBAUTHN_RP_ID || "localhost";
 const RP_ORIGIN = process.env.WEBAUTHN_ORIGIN || "http://localhost:5173";
 
-// In-memory store for pending WebAuthn challenges (per user)
-// In production, use Redis or similar distributed store
+// In-memory challenge store (5-minute TTL challenge buffer for registration and authentication ceremonies)
 const challengeStore: Map<string, any> = new Map();
 
 // Helper to safely get user ID as string

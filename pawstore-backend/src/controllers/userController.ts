@@ -1,3 +1,15 @@
+/**
+ * @file userController.ts
+ * @description User Authentication, Profile Management, MFA (TOTP), and Access Control Controller for PawStore.
+ * 
+ * SECURITY ARCHITECTURE & STANDARDS MAPPING:
+ * - OWASP WSTG Mapping: WSTG-ATHN-01 (Credentials Testing), WSTG-ATHN-04 (Brute Force Defense), WSTG-SESS-06 (Logout Revocation).
+ * - Vulnerability Remediation: Remediates VULN-05 (Post-Logout Token Revocation Gap) in `logoutUser` by recording `user.lastLogout = new Date()`.
+ * - Password Policy Enforcer: `validatePasswordPolicy` mandates 12+ characters, uppercase, lowercase, numeric, and special characters (NIST SP 800-63B).
+ * - Multi-Factor Authentication: Generates and verifies TOTP codes using `speakeasy` and `qrcode` with AES-256-GCM encrypted secrets at rest.
+ * - Privacy & GDPR Compliance: Implements `exportUserData` (data portability) and `deleteOwnAccount` (right to be forgotten).
+ */
+
 import asyncHandler from "express-async-handler";
 import speakeasy from "speakeasy";
 import qrcode from "qrcode";
@@ -11,7 +23,8 @@ import { trackFailedAttempt } from "../middleware/ipFilter";
 const getUserId = (user: any): string => user?._id?.toString() || "unknown";
 
 /**
- * Validate password meets policy requirements.
+ * Validate password meets NIST SP 800-63B policy requirements.
+ * Rules: 12-128 characters, at least 1 uppercase, 1 lowercase, 1 digit, and 1 special character.
  */
 export function validatePasswordPolicy(password: string): string[] {
   const errors: string[] = [];
@@ -36,9 +49,11 @@ export function validatePasswordPolicy(password: string): string[] {
   return errors;
 }
 
-// @desc    Auth user & get token
-// @route   POST /api/users/login
-// @access  Public
+/**
+ * @desc    Authenticate user credentials & issue HttpOnly JWT session cookie
+ * @route   POST /api/users/login
+ * @access  Public (Protected by Layer 1 reCAPTCHA v3 & Layer 2 authLimiter)
+ */
 const authUser = asyncHandler(async (req: Request, res: Response) => {
   const { email, password } = req.body;
 

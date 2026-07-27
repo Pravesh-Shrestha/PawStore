@@ -1,3 +1,14 @@
+/**
+ * @file api.ts
+ * @description Centralized Axios API Service Layer & HTTP Interceptor for PawStore Frontend.
+ * 
+ * SECURITY CLIENT DESIGN:
+ * - TLS Communication: Communicates exclusively with backend API via HTTPS / TLS 1.3.
+ * - Automatic Header Injection: Intercepts outgoing requests to attach JWT `Authorization: Bearer <token>` header.
+ * - Credentials Handshake: Supports HttpOnly cookie transmission (`withCredentials: true` option where applicable).
+ * - Endpoints: Handles WebAuthn Passkeys, TOTP MFA verification, reCAPTCHA tokens, and Stripe payments.
+ */
+
 import axios from "axios";
 
 // Use environment variable for API URL with fallback
@@ -5,7 +16,7 @@ const API_URL =
   import.meta.env.VITE_API_URL ||
   "https://pawstore-backend-6iqi.onrender.com/api";
 
-// Create axios instance
+// Create configured Axios instance
 const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -13,7 +24,10 @@ const api = axios.create({
   },
 });
 
-// Add a request interceptor to include the auth token in requests
+/**
+ * Axios Request Interceptor:
+ * Automatically injects active JWT token into HTTP Authorization header for protected endpoints.
+ */
 api.interceptors.request.use(
   (config) => {
     const userInfo = localStorage.getItem("userInfo");

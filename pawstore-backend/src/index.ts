@@ -1,3 +1,21 @@
+/**
+ * @file index.ts
+ * @description Main Express 5 API Server Entry Point & 11-Step Request Processing Security Pipeline for PawStore.
+ * 
+ * SECURITY ARCHITECTURE & PIPELINE ASSEMBLY (Figure 2 / Section 8.1):
+ * 1. TLS Enforcement: Redirects HTTP traffic to HTTPS in production environments.
+ * 2. Helmet Security Headers: Sets HSTS (max-age 1 yr, includeSubDomains, preload), X-Frame-Options, and CSP (VULN-03 documentation).
+ * 3. CORS Whitelist Validation: Restricts cross-origin requests strictly to authorized client domains.
+ * 4. Cookie Parser: Parses HttpOnly, Secure, SameSite=Strict session cookies.
+ * 5. Body Payload Size Limiter: Enforces a strict 10kb maximum payload limit to mitigate DoS / buffer overflow attacks.
+ * 6. IP Filter Middleware: Applies dynamic IP allow/block lists and automated 20-failure IP lockout.
+ * 7. Tiered Rate Limiting: Applies public catalog and API request limits.
+ * 8. Authentication & Session Validation: Checks JWT, User-Agent binding, session versioning, and token revocation.
+ * 9. Activity Logger: Captures non-repudiation audit logs with sensitive parameter redaction.
+ * 10. Business Controllers & Routes: Executes business logic.
+ * 11. Centralized Error Handler: Prevents stack trace disclosure (VULN-02 remediation).
+ */
+
 import dotenv from "dotenv";
 import path from "path";
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
@@ -15,10 +33,10 @@ import { requestLogger } from "./utils/activityLogger";
 const PORT = process.env.PORT || 5000;
 const app = express();
 
-// Connect to database
+// Step 1: Connect to MongoDB database
 dbConnect();
 
-// TLS/SSL Enforcement: Redirect HTTP to HTTPS in production
+// Step 1 (Network Tier): TLS/SSL Enforcement - Redirect HTTP traffic to HTTPS in production
 if (process.env.NODE_ENV === "production") {
   app.use((req: Request, res: Response, next: NextFunction) => {
     const proto = req.headers["x-forwarded-proto"] || req.protocol;
@@ -29,13 +47,15 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
-// Security Headers (helmet)
+// Step 2: HTTP Security Headers via Helmet
+// Enforces HSTS (1 year max-age), Clickjacking defense (X-Frame-Options), and CSP.
+// VULN-03 Note: CSP is set to false in development to accommodate Vite Hot Module Replacement (HMR).
 app.use(
   helmet({
     contentSecurityPolicy: process.env.NODE_ENV === "production" ? undefined : false,
     crossOriginEmbedderPolicy: false,
     strictTransportSecurity: {
-      maxAge: 31536000, // 1 year in seconds
+      maxAge: 31536000, // 1 year HSTS duration
       includeSubDomains: true,
       preload: true,
     },

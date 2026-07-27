@@ -1,3 +1,17 @@
+/**
+ * @file passwordResetController.ts
+ * @description Secure Password Reset & Recovery Workflow Controller for PawStore.
+ * 
+ * SECURITY ARCHITECTURE & STANDARDS MAPPING:
+ * - OWASP WSTG Mapping: WSTG-ATHN-09 (Testing for Weak Password Reset / Recovery).
+ * - Vulnerability Remediation: Remediates VULN-01 (Rate Limiting Deficiencies & SMTP Exhaustion Vector)
+ *   by attaching `passwordChangeLimiter` to password reset routes (3 attempts per hour limit).
+ * - Anti-Enumeration Defense: Returns generic success response whether email exists or not in database.
+ * - Cryptographic Token Protection: Generates 256-bit random reset token (`crypto.randomBytes(32)`), stores SHA-256 hash in DB,
+ *   and emails raw token. Ensures database compromise does not leak actionable reset links.
+ * - NIST Zero-Trust "Assume Breach": Increments `user.sessionVersion += 1` on reset to immediately invalidate active JWTs across devices.
+ */
+
 import asyncHandler from "express-async-handler";
 import { Request, Response } from "express";
 import crypto from "crypto";
@@ -6,9 +20,11 @@ import { sendPasswordResetEmail } from "../utils/emailService";
 import { writeLog, logLevels } from "../utils/activityLogger";
 import { validatePasswordPolicy } from "./userController";
 
-// @desc    Request password reset (sends email with reset link)
-// @route   POST /api/users/forgot-password
-// @access  Public
+/**
+ * @desc    Request password reset link
+ * @route   POST /api/users/forgot-password
+ * @access  Public (Protected by Tier 5 passwordChangeLimiter: 3 requests / hr)
+ */
 const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
   const { email } = req.body;
 
@@ -17,8 +33,7 @@ const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
     throw new Error("Email is required");
   }
 
-  // Always return success to prevent email enumeration
-  // We'll just return a generic message regardless of whether the email exists
+  // Always return identical success message to prevent user email discovery/enumeration
   const user = await User.findOne({ email: email.toLowerCase().trim() });
 
   if (!user) {

@@ -1,3 +1,18 @@
+/**
+ * @file authMiddleware.test.ts
+ * @description Jest Automated Security Unit Test Suite for Authentication Middleware (`protect` & `admin`).
+ * 
+ * SECURITY TEST COVERAGE (CW2 Report Section 9.3 / 9.5):
+ * 1. Token extraction (Cookie vs Bearer header).
+ * 2. Signature verification & User existence checks.
+ * 3. Deactivated & Locked account rejection.
+ * 4. 90-day password expiration enforcement.
+ * 5. [VULN-05 Verification] Post-logout token revocation rejection (`tokenIssuedAt < lastLogoutTime`).
+ * 6. Session versioning invalidation (`tokenVersion !== userVersion`).
+ * 7. User-Agent binding mismatch rejection (`tokenUA !== requestUA`).
+ * 8. Role-Based Access Control (RBAC) admin middleware checks.
+ */
+
 import jwt from "jsonwebtoken";
 import { protect, admin } from "../middleware/authMiddleware";
 import User from "../models/userModel";

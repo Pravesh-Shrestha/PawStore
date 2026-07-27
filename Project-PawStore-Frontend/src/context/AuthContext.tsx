@@ -1,3 +1,13 @@
+/**
+ * @file AuthContext.tsx
+ * @description Global Client Authentication Context & Session State Manager for PawStore.
+ * 
+ * SECURITY CLIENT DESIGN:
+ * - Multi-Stage MFA State Machine: Enforces 2-step verification flow (`requiresMFA`). Prevents authenticated state access until TOTP token is verified.
+ * - WebAuthn / Passkey Ceremony: Interacts with `@simplewebauthn/browser` to trigger hardware authenticators (TouchID, FaceID, YubiKey).
+ * - Client Session Synchronization: Manages local user state and coordinates post-logout session clearing with backend server.
+ */
+
 import { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import { login, register, logout, getUserProfile, logoutUserAPI, verifyMFALogin, completeWebAuthnLogin, beginWebAuthnLogin } from '../services/api';
 import { startAuthentication } from '@simplewebauthn/browser';

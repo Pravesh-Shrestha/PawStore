@@ -1,3 +1,16 @@
+/**
+ * @file activityLogger.ts
+ * @description Centralized Security Audit & Activity Logging Infrastructure for PawStore.
+ * 
+ * SECURITY ARCHITECTURE & STANDARDS MAPPING:
+ * - STRIDE Threat Mitigation: Mitigates Non-Repudiation (provides immutable, detailed evidence trail for security events).
+ * - NIST Zero-Trust & SIEM Readiness: Formats logs in structured JSON for SIEM ingestion.
+ * - Sensitive Data Protection: Automatically redacts credentials (`password`, `token`, `mfaSecret`, `jwt`, `cookie`)
+ *   before writing logs to persistent storage or stdout.
+ * - Dual-Persistence Strategy: Simultaneously writes to daily file system audit logs (`logs/audit-YYYY-MM-DD.log`)
+ *   and MongoDB `AuditLog` collection.
+ */
+
 import fs from "fs";
 import path from "path";
 import { Request, Response, NextFunction } from "express";
@@ -28,6 +41,10 @@ interface LogEntry {
   details: Record<string, any>;
 }
 
+/**
+ * Sanitizes input log payload object by replacing sensitive fields
+ * (passwords, tokens, authorization headers, MFA secrets) with `[REDACTED]`.
+ */
 function sanitizeData(data: Record<string, any>): Record<string, any> {
   if (!data) return {};
   const sanitized = { ...data };

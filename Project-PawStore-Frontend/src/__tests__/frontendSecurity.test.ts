@@ -1,3 +1,13 @@
+/**
+ * @file frontendSecurity.test.ts
+ * @description Vitest Client-Side Security Test Suite for PawStore Frontend.
+ * 
+ * SECURITY TEST COVERAGE (CW2 Report Section 9.3 / security-test-summary.md):
+ * 1. Password Strength Scoring (`zxcvbn` entropy evaluation).
+ * 2. XSS HTML character escaping (`<script>` tag sanitization).
+ * 3. HttpOnly Token Cookie Storage Policy verification.
+ */
+
 import { describe, test, expect } from "vitest";
 import zxcvbn from "zxcvbn";
 

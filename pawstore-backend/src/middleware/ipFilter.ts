@@ -1,35 +1,33 @@
-import { Request, Response, NextFunction } from "express";
-import { writeLog, logLevels } from "../utils/activityLogger";
-
 /**
- * IP-based Access Control Middleware
- *
- * Provides:
- * 1. IP allow-listing — only permit requests from known IPs/ranges
- * 2. IP block-listing — deny requests from known malicious IPs
- * 3. Persistent storage using a simple JSON file
- * 4. Admin API endpoints to manage the lists
- *
- * Part of the defence-in-depth strategy for brute-force protection
- * and zero-trust networking.
+ * @file ipFilter.ts
+ * @description IP-Based Access Filtering & Automated Brute-Force IP Lockout Middleware for PawStore.
+ * 
+ * SECURITY ARCHITECTURE & STANDARDS MAPPING:
+ * - Defense-in-Depth Model: Layer 4 (Automated IP Auto-Blocking Thresholds).
+ * - NIST Zero-Trust Principles: Continuous traffic validation, subnet filtering, and dynamic threat isolation.
+ * - STRIDE Threat Mitigation: Mitigates Account Enumeration, Distributed Denial of Service (DDoS), and High-Frequency Brute-Force Attacks.
+ * - Vulnerability Remediation Support: Supports VULN-02 Remediation by automatically blocking aggressive IPs trying to enumerate user accounts.
+ * - Threshold Parameters: 20 failed attempts within a 15-minute sliding window trigger an automatic 1-hour IP block (`AUTO_BLOCK_DURATION_MS = 1h`).
  */
 
+import { Request, Response, NextFunction } from "express";
+import { writeLog, logLevels } from "../utils/activityLogger";
 import fs from "fs";
 import path from "path";
 
 interface IPList {
-  allowed: string[];   // CIDR or exact IPs
-  blocked: string[];   // CIDR or exact IPs
+  allowed: string[];   // CIDR ranges or exact IP addresses
+  blocked: string[];   // CIDR ranges or exact IP addresses
 }
 
 const IP_LIST_PATH = path.join(__dirname, "../../data/ip-lists.json");
 
 let ipLists: IPList = { allowed: [], blocked: [] };
 
-// Track failed attempt counts per IP for automatic blocking
-const FAILURE_THRESHOLD = 20;       // Auto-block after 20 failed attempts
-const FAILURE_WINDOW_MS = 15 * 60 * 1000; // Within 15 minutes
-const AUTO_BLOCK_DURATION_MS = 60 * 60 * 1000; // Block for 1 hour
+// Layer 4 Configuration: Automated IP Blockout Thresholds
+const FAILURE_THRESHOLD = 20;             // Auto-block IP after 20 cumulative failed authentication attempts
+const FAILURE_WINDOW_MS = 15 * 60 * 1000;  // 15-minute evaluation window
+const AUTO_BLOCK_DURATION_MS = 60 * 60 * 1000; // IP stays in block-list for 1 hour
 
 interface IPFailureTracker {
   [ip: string]: { count: number; firstAttempt: number; blockedUntil?: number };

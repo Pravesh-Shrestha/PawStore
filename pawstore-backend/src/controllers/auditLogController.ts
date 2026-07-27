@@ -1,32 +1,56 @@
+/**
+ * @file auditLogController.ts
+ * @description Administrative Audit Log Management & Security Analytics Controller.
+ * 
+ * SECURITY ARCHITECTURE & VULNERABILITY REMEDIATION:
+ * - OWASP WSTG Mapping: WSTG-INPV-05 (Testing for NoSQL Injection).
+ * - Vulnerability Remediation: Remediates VULN-04 (NoSQL Operator Injection in Administrative Audit Log Filters).
+ *   Enforces strict string type checking and 24-character hexadecimal ObjectId regex validation (`/^[0-9a-fA-F]{24}$/`)
+ *   to prevent attackers from passing object query operators like `{$gt: ''}` or `{$ne: null}`.
+ * - Access Control: Protected via `protect` and `admin` middleware (RBAC).
+ */
+
 import asyncHandler from "express-async-handler";
 import { Request, Response } from "express";
 import AuditLog from "../models/auditLogModel";
 
-// @desc    Get audit logs with pagination, filtering, and search
-// @route   GET /api/audit-logs
-// @access  Private/Admin
+/**
+ * @desc    Get audit logs with pagination, filtering, and search
+ * @route   GET /api/audit-logs
+ * @access  Private/Admin
+ * 
+ * SECURITY CONTROL (VULN-04 Defense):
+ * Validates `userId` query parameter to prevent NoSQL query operator injection.
+ * Rejects non-string inputs or invalid MongoDB ObjectId patterns with HTTP 400 Bad Request.
+ */
 const getAuditLogs = asyncHandler(async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 50;
   const skip = (page - 1) * limit;
 
-  // Build filter
+  // Build Mongo query filter object
   const filter: any = {};
 
-  if (req.query.level) {
+  if (req.query.level && typeof req.query.level === "string") {
     filter.level = req.query.level;
   }
 
-  if (req.query.action) {
-    filter.action = { $regex: req.query.action as string, $options: "i" };
+  if (req.query.action && typeof req.query.action === "string") {
+    filter.action = { $regex: req.query.action, $options: "i" };
   }
 
+  // [VULN-04 Remediation] Strict NoSQL Query Injection Defense for userId
   if (req.query.userId) {
-    filter.userId = req.query.userId;
+    if (typeof req.query.userId === "string" && /^[0-9a-fA-F]{24}$/.test(req.query.userId)) {
+      filter.userId = req.query.userId;
+    } else {
+      res.status(400);
+      throw new Error("Invalid ObjectId format for userId parameter");
+    }
   }
 
-  if (req.query.search) {
-    const searchRegex = { $regex: req.query.search as string, $options: "i" };
+  if (req.query.search && typeof req.query.search === "string") {
+    const searchRegex = { $regex: req.query.search, $options: "i" };
     filter.$or = [
       { action: searchRegex },
       { userName: searchRegex },
@@ -36,14 +60,14 @@ const getAuditLogs = asyncHandler(async (req: Request, res: Response) => {
     ];
   }
 
-  // Date range filtering
+  // Date range filtering with sanitized Date parsing
   if (req.query.startDate || req.query.endDate) {
     filter.timestamp = {};
-    if (req.query.startDate) {
-      filter.timestamp.$gte = new Date(req.query.startDate as string);
+    if (req.query.startDate && typeof req.query.startDate === "string") {
+      filter.timestamp.$gte = new Date(req.query.startDate);
     }
-    if (req.query.endDate) {
-      filter.timestamp.$lte = new Date(req.query.endDate as string);
+    if (req.query.endDate && typeof req.query.endDate === "string") {
+      filter.timestamp.$lte = new Date(req.query.endDate);
     }
   }
 
