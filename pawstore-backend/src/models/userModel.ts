@@ -92,6 +92,7 @@ const userSchema = new Schema<IUser>(
       default: null,
       set: function (val: string) {
         if (!val || val === null) return val;
+        if (isEncrypted(val)) return val;
         return encrypt(val);
       },
       get: function (val: string) {
@@ -99,7 +100,7 @@ const userSchema = new Schema<IUser>(
         try {
           return isEncrypted(val) ? decrypt(val) : val;
         } catch {
-          return val;
+          return null;
         }
       },
     },

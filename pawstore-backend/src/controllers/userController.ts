@@ -193,11 +193,13 @@ const verifyMFALogin = asyncHandler(async (req, res) => {
     throw new Error("MFA is not enabled for this account");
   }
 
+  const cleanToken = String(mfaToken).trim().replace(/\s+/g, "");
+
   const verified = speakeasy.totp.verify({
     secret: user.mfaSecret,
     encoding: "base32",
-    token: mfaToken,
-    window: 1, // Allow 1 step before/after for time drift
+    token: cleanToken,
+    window: 2, // Allow 2 steps (60 seconds) for time drift
   });
 
   if (!verified) {
@@ -447,12 +449,14 @@ const enableMFA = asyncHandler(async (req, res) => {
     throw new Error("MFA setup not initiated. Please call setup first.");
   }
 
+  const cleanToken = String(mfaToken).trim().replace(/\s+/g, "");
+
   // Verify the token
   const verified = speakeasy.totp.verify({
     secret: user.mfaSecret,
     encoding: "base32",
-    token: mfaToken,
-    window: 1,
+    token: cleanToken,
+    window: 2,
   });
 
   if (!verified) {
@@ -500,12 +504,14 @@ const disableMFA = asyncHandler(async (req, res) => {
     throw new Error("Invalid password");
   }
 
+  const cleanDisableToken = String(mfaToken).trim().replace(/\s+/g, "");
+
   // Verify MFA token
   const verified = speakeasy.totp.verify({
     secret: user.mfaSecret!,
     encoding: "base32",
-    token: mfaToken,
-    window: 1,
+    token: cleanDisableToken,
+    window: 2,
   });
 
   if (!verified) {

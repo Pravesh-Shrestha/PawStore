@@ -19,14 +19,16 @@ const API_URL =
 // Create configured Axios instance
 const api = axios.create({
   baseURL: API_URL,
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
+    "X-Requested-With": "XMLHttpRequest",
   },
 });
 
 /**
  * Axios Request Interceptor:
- * Automatically injects active JWT token into HTTP Authorization header for protected endpoints.
+ * Automatically injects active JWT token into HTTP Authorization header and X-CSRF-Token header.
  */
 api.interceptors.request.use(
   (config) => {
@@ -35,6 +37,13 @@ api.interceptors.request.use(
       const token = JSON.parse(userInfo).token;
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
+    // Extract XSRF-TOKEN cookie if present
+    if (typeof document !== "undefined") {
+      const match = document.cookie.match(new RegExp("(^| )XSRF-TOKEN=([^;]+)"));
+      if (match) {
+        config.headers["X-CSRF-Token"] = match[2];
       }
     }
     return config;
