@@ -47,7 +47,10 @@ const LoginPage = () => {
     }
 
     // Execute reCAPTCHA
-    const captchaToken = captchaRef.current ? await captchaRef.current.executeAsync() : null;
+    let captchaToken = null;
+    if (captchaRef.current) {
+      captchaToken = await captchaRef.current.executeAsync();
+    }
 
     setIsSubmitting(true);
     try {

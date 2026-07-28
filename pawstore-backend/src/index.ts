@@ -77,20 +77,29 @@ const allowedOrigins: (string | undefined)[] = [
   "http://localhost:5173",
   "http://localhost:5174",
   "http://localhost:3000",
+  // VMware & Host LAN IPs
+  "http://192.168.37.1:5173",
+  "http://192.168.157.1:5173",
+  "http://192.168.0.102:5173",
+  "http://192.168.0.103:5173",
+  "http://myapp.local:5173",
+  "http://myapp.local:3000",
+  "http://burpsuite",
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
 app.use(
   cors({
     origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
-      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"), false);
+      if (!origin) return callback(null, true);
+      const isLocalIP = /^http:\/\/(127\.0\.0\.1|localhost|192\.168\.\d+\.\d+|172\.\d+\.\d+\.\d+)(:\d+)?$/.test(origin);
+      if (allowedOrigins.indexOf(origin) !== -1 || isLocalIP || process.env.NODE_ENV !== "production") {
+        return callback(null, true);
       }
+      return callback(null, false);
     },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "X-CSRF-Token"],
   })
 );
@@ -208,7 +217,7 @@ app.get("/", (req: Request, res: Response) => {
 app.use(notFound);
 app.use(errorHandler);
 
-app.listen(PORT, () => {
+app.listen(Number(PORT), "0.0.0.0", () => {
   console.log(
     `Server is running in ${process.env.NODE_ENV} mode on port ${PORT}`
   );

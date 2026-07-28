@@ -11,10 +11,20 @@
 
 import axios from "axios";
 
-// Use environment variable for API URL with fallback
-const API_URL =
-  import.meta.env.VITE_API_URL ||
-  "https://pawstore-backend-6iqi.onrender.com/api";
+// Dynamically resolve API URL matching client protocol and hostname for cross-device/VM testing
+const getApiUrl = (): string => {
+  if (typeof window !== "undefined") {
+    const { protocol, hostname } = window.location;
+    if (hostname !== "localhost" && hostname !== "127.0.0.1") {
+      return `${protocol}//${hostname}:5000/api`;
+    }
+  }
+  const rawEnv = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  return rawEnv.replace(/["';]/g, "").trim();
+};
+
+const API_URL = getApiUrl();
+console.log("PawStore API Target URL:", API_URL);
 
 // Create configured Axios instance
 const api = axios.create({

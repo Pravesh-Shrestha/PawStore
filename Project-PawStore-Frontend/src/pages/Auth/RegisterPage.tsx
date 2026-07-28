@@ -85,8 +85,11 @@ const RegisterPage = () => {
       return;
     }
 
-    // Execute reCAPTCHA for high-risk registration
-    const captchaToken = captchaRef.current ? await captchaRef.current.executeAsync() : null;
+    // Execute reCAPTCHA for registration
+    let captchaToken = null;
+    if (captchaRef.current) {
+      captchaToken = await captchaRef.current.executeAsync();
+    }
 
     setIsSubmitting(true);
     try {
