@@ -220,14 +220,14 @@ const beginLogin = asyncHandler(async (req: Request, res: Response) => {
 const completeLogin = asyncHandler(async (req: Request, res: Response) => {
   const { credential } = req.body;
 
-  if (!credential || !credential.id) {
+  if (!credential || !credential.id || typeof credential.id !== "string") {
     res.status(400);
-    throw new Error("Credential data is required");
+    throw new Error("Credential data with a valid string ID is required");
   }
 
   // Find the credential in our database
   const savedCredential = await WebAuthnCredential.findOne({
-    credentialId: credential.id,
+    credentialId: String(credential.id),
   });
 
   if (!savedCredential) {

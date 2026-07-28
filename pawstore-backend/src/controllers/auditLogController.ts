@@ -15,6 +15,13 @@ import { Request, Response } from "express";
 import AuditLog from "../models/auditLogModel";
 
 /**
+ * Helper to escape special regex characters from user input to mitigate ReDoS & NoSQL regex injection.
+ */
+function escapeRegex(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
  * @desc    Get audit logs with pagination, filtering, and search
  * @route   GET /api/audit-logs
  * @access  Private/Admin
@@ -36,7 +43,8 @@ const getAuditLogs = asyncHandler(async (req: Request, res: Response) => {
   }
 
   if (req.query.action && typeof req.query.action === "string") {
-    filter.action = { $regex: req.query.action, $options: "i" };
+    const safeAction = escapeRegex(req.query.action);
+    filter.action = { $regex: safeAction, $options: "i" };
   }
 
   // [VULN-04 Remediation] Strict NoSQL Query Injection Defense for userId
@@ -50,7 +58,8 @@ const getAuditLogs = asyncHandler(async (req: Request, res: Response) => {
   }
 
   if (req.query.search && typeof req.query.search === "string") {
-    const searchRegex = { $regex: req.query.search, $options: "i" };
+    const safeSearch = escapeRegex(req.query.search);
+    const searchRegex = { $regex: safeSearch, $options: "i" };
     filter.$or = [
       { action: searchRegex },
       { userName: searchRegex },

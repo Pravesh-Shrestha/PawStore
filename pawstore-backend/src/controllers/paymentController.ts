@@ -17,12 +17,12 @@ const stripe = new Stripe(stripeSecretKey, {
 const createPaymentIntent = asyncHandler(async (req: Request, res: Response) => {
   const { orderId } = req.body;
 
-  if (!orderId) {
+  if (!orderId || typeof orderId !== "string" || !/^[0-9a-fA-F]{24}$/.test(orderId)) {
     res.status(400);
-    throw new Error("Order ID is required");
+    throw new Error("Valid string Order ID is required");
   }
 
-  const order = await Order.findById(orderId);
+  const order = await Order.findById(String(orderId));
 
   if (!order) {
     res.status(404);
@@ -80,9 +80,15 @@ const createPaymentIntent = asyncHandler(async (req: Request, res: Response) => 
 const confirmPayment = asyncHandler(async (req: Request, res: Response) => {
   const { paymentIntentId, orderId } = req.body;
 
-  if (!paymentIntentId || !orderId) {
+  if (
+    !paymentIntentId ||
+    typeof paymentIntentId !== "string" ||
+    !orderId ||
+    typeof orderId !== "string" ||
+    !/^[0-9a-fA-F]{24}$/.test(orderId)
+  ) {
     res.status(400);
-    throw new Error("PaymentIntent ID and Order ID are required");
+    throw new Error("Valid PaymentIntent ID and 24-character Order ID are required");
   }
 
   try {
@@ -93,7 +99,7 @@ const confirmPayment = asyncHandler(async (req: Request, res: Response) => {
       throw new Error(`Payment has not succeeded. Status: ${paymentIntent.status}`);
     }
 
-    const order = await Order.findById(orderId);
+    const order = await Order.findById(String(orderId));
 
     if (!order) {
       res.status(404);

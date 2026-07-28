@@ -42,6 +42,18 @@ interface LogEntry {
 }
 
 /**
+ * Sanitizes string inputs by stripping newlines, control characters, and format specifiers
+ * to mitigate format string injection (CWE-134) and log injection (CWE-117).
+ */
+function sanitizeStringInput(input: string): string {
+  if (!input || typeof input !== "string") return "unknown";
+  return input
+    .replace(/[\r\n\t]/g, " ")
+    .replace(/%/g, "%%")
+    .trim();
+}
+
+/**
  * Sanitizes input log payload object by replacing sensitive fields
  * (passwords, tokens, authorization headers, MFA secrets) with `[REDACTED]`.
  */
@@ -71,14 +83,18 @@ function writeLog(
   req: any = null
 ): void {
   const timestamp = new Date().toISOString();
+  const rawUserAgent = req?.headers?.["user-agent"] || "unknown";
+  const rawIp = req?.ip || req?.connection?.remoteAddress || "unknown";
+  const sanitizedDetails = sanitizeData(details);
+
   const logEntry: LogEntry = {
     timestamp,
     level,
-    action,
-    userId: userId || "anonymous",
-    ip: req?.ip || req?.connection?.remoteAddress || "unknown",
-    userAgent: req?.headers?.["user-agent"] || "unknown",
-    details: sanitizeData(details),
+    action: sanitizeStringInput(action),
+    userId: sanitizeStringInput(userId || "anonymous"),
+    ip: sanitizeStringInput(rawIp),
+    userAgent: sanitizeStringInput(rawUserAgent),
+    details: sanitizedDetails,
   };
 
   const logLine = JSON.stringify(logEntry) + "\n";
@@ -91,12 +107,12 @@ function writeLog(
     console.error("Failed to write audit log:", err.message);
   }
 
-  const consoleMsg = `[${timestamp}] [${level}] [${action}] User: ${logEntry.userId} IP: ${logEntry.ip}`;
+  const consoleMsg = `[${timestamp}] [${level}] [${logEntry.action}] User: ${logEntry.userId} IP: ${logEntry.ip}`;
   
   if (level === logLevels.ERROR || level === logLevels.SECURITY) {
-    console.error(`🔴 ${consoleMsg}`, details);
+    console.error(`🔴 ${consoleMsg}`, sanitizedDetails);
   } else if (level === logLevels.WARN) {
-    console.warn(`🟡 ${consoleMsg}`, details);
+    console.warn(`🟡 ${consoleMsg}`, sanitizedDetails);
   } else {
     console.log(`🟢 ${consoleMsg}`);
   }

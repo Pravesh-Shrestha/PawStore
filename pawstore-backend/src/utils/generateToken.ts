@@ -14,6 +14,14 @@
 import jwt from "jsonwebtoken";
 import { Response } from "express";
 
+const getJwtSecret = (): string => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("JWT_SECRET environment variable is required");
+  }
+  return secret;
+};
+
 /**
  * Signs an HMAC-SHA256 JSON Web Token with session versioning and User-Agent binding claims.
  */
@@ -24,7 +32,7 @@ const generateToken = (id: string, sessionVersion: number = 0, userAgent: string
       sessionVersion,
       userAgent,
     },
-    process.env.JWT_SECRET || "fallback_secret",
+    getJwtSecret(),
     {
       expiresIn: "1d", // 24-hour expiration lifetime
     }

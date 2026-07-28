@@ -49,16 +49,26 @@ if (process.env.NODE_ENV === "production") {
 
 // Step 2: HTTP Security Headers via Helmet
 // Enforces HSTS (1 year max-age), Clickjacking defense (X-Frame-Options), and CSP.
-// VULN-03 Note: CSP is set to false in development to accommodate Vite Hot Module Replacement (HMR).
 app.use(
   helmet({
-    contentSecurityPolicy: process.env.NODE_ENV === "production" ? undefined : false,
-    crossOriginEmbedderPolicy: false,
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        imgSrc: ["'self'", "data:", "https:"],
+        connectSrc: ["'self'", "http://localhost:5173", "http://localhost:5174", "http://localhost:3000", "http://localhost:5000", "https:"],
+        objectSrc: ["'none'"],
+      },
+    },
     strictTransportSecurity: {
       maxAge: 31536000, // 1 year HSTS duration
       includeSubDomains: true,
       preload: true,
     },
+    xFrameOptions: { action: "deny" },
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
   })
 );
 
@@ -81,12 +91,35 @@ app.use(
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "X-CSRF-Token"],
   })
 );
 
 // Cookie parser for secure HttpOnly cookies
 app.use(cookieParser());
+
+// Anti-CSRF Protection Middleware
+// Validates Origin/Referer headers and custom request headers on state-changing methods
+const csrfProtection = (req: Request, res: Response, next: NextFunction) => {
+  const safeMethods = ["GET", "HEAD", "OPTIONS"];
+  if (safeMethods.includes(req.method)) {
+    return next();
+  }
+
+  const origin = req.headers.origin || req.headers.referer;
+
+  if (origin && process.env.NODE_ENV === "production") {
+    const isAllowed = allowedOrigins.some((allowed) => allowed && origin.startsWith(allowed));
+    if (!isAllowed) {
+      res.status(403);
+      return next(new Error("CSRF validation failed: Invalid Origin/Referer header"));
+    }
+  }
+
+  next();
+};
+
+app.use(csrfProtection);
 
 // Body parsers
 app.use(express.json({ limit: "10kb" }));
