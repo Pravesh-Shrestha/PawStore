@@ -98,28 +98,22 @@ app.use(
 // Cookie parser for secure HttpOnly cookies
 app.use(cookieParser());
 
-// Anti-CSRF Protection Middleware
-// Protects session cookies by validating anti-CSRF headers (X-CSRF-Token / X-Requested-With)
-// and Origin/Referer compliance on state-changing HTTP methods (POST, PUT, DELETE, PATCH).
+// Anti-CSRF Protection Middleware (Double-Submit Cookie Pattern)
+// Validates anti-CSRF token from request headers (x-csrf-token, x-xsrf-token, x-requested-with)
+// or body against the XSRF-TOKEN cookie on all state-changing HTTP methods (POST, PUT, DELETE, PATCH).
 const verifyCsrfToken = (req: Request, res: Response, next: NextFunction) => {
   const safeMethods = ["GET", "HEAD", "OPTIONS"];
   if (safeMethods.includes(req.method)) {
     return next();
   }
 
-  const csrfToken = req.headers["x-csrf-token"] || req.headers["x-requested-with"] || req.cookies?.["XSRF-TOKEN"];
-  const origin = req.headers.origin || req.headers.referer;
+  const cookieToken = req.cookies?.["XSRF-TOKEN"] || req.cookies?.["_csrf"] || req.cookies?.["token"];
+  const headerToken = (req.headers["x-csrf-token"] as string) || (req.headers["x-xsrf-token"] as string) || (req.headers["x-requested-with"] as string) || (req.body?._csrf as string);
 
-  if (process.env.NODE_ENV === "production" && !csrfToken) {
-    res.status(403);
-    return next(new Error("CSRF token validation failed: Missing anti-CSRF header"));
-  }
-
-  if (origin && process.env.NODE_ENV === "production") {
-    const isAllowed = allowedOrigins.some((allowed) => allowed && origin.startsWith(allowed));
-    if (!isAllowed) {
+  if (process.env.NODE_ENV === "production") {
+    if (!cookieToken || !headerToken || cookieToken !== headerToken) {
       res.status(403);
-      return next(new Error("CSRF validation failed: Invalid Origin/Referer header"));
+      return next(new Error("CSRF token validation failed: Missing or mismatched anti-CSRF token"));
     }
   }
 

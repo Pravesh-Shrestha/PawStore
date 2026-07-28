@@ -13,6 +13,7 @@
 
 import jwt from "jsonwebtoken";
 import { Response } from "express";
+import crypto from "crypto";
 
 const getJwtSecret = (): string => {
   const secret = process.env.JWT_SECRET;
@@ -40,7 +41,7 @@ const generateToken = (id: string, sessionVersion: number = 0, userAgent: string
 };
 
 /**
- * Sets secure session JWT in client HttpOnly cookie header.
+ * Sets secure session JWT in client HttpOnly cookie header along with double-submit XSRF-TOKEN cookie.
  */
 const setTokenCookie = (res: Response, token: string): void => {
   res.cookie("token", token, {
@@ -50,10 +51,19 @@ const setTokenCookie = (res: Response, token: string): void => {
     maxAge: 24 * 60 * 60 * 1000,                  // 24 hours in milliseconds
     path: "/",
   });
+
+  const csrfToken = crypto.randomBytes(32).toString("hex");
+  res.cookie("XSRF-TOKEN", csrfToken, {
+    httpOnly: false,                               // Double-submit CSRF cookie accessible to client JS
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 24 * 60 * 60 * 1000,
+    path: "/",
+  });
 };
 
 /**
- * Clears session token cookie on user logout or session termination.
+ * Clears session token cookie and XSRF-TOKEN cookie on user logout or session termination.
  */
 const clearTokenCookie = (res: Response): void => {
   res.cookie("token", "", {
@@ -61,6 +71,13 @@ const clearTokenCookie = (res: Response): void => {
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
     maxAge: 0, // Instantly expires cookie on client browser
+    path: "/",
+  });
+  res.cookie("XSRF-TOKEN", "", {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 0,
     path: "/",
   });
 };
