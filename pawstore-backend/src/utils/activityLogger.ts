@@ -110,11 +110,11 @@ function writeLog(
   const consoleMsg = `[${timestamp}] [${level}] [${logEntry.action}] User: ${logEntry.userId} IP: ${logEntry.ip}`;
   
   if (level === logLevels.ERROR || level === logLevels.SECURITY) {
-    console.error(`🔴 ${consoleMsg}`, sanitizedDetails);
+    console.error("%s %o", `🔴 ${consoleMsg}`, sanitizedDetails);
   } else if (level === logLevels.WARN) {
-    console.warn(`🟡 ${consoleMsg}`, sanitizedDetails);
+    console.warn("%s %o", `🟡 ${consoleMsg}`, sanitizedDetails);
   } else {
-    console.log(`🟢 ${consoleMsg}`);
+    console.log("%s", `🟢 ${consoleMsg}`);
   }
 
   monitorEvent(action, logEntry.userId, logEntry.ip, level, details);

@@ -99,14 +99,21 @@ app.use(
 app.use(cookieParser());
 
 // Anti-CSRF Protection Middleware
-// Validates Origin/Referer headers and custom request headers on state-changing methods
-const csrfProtection = (req: Request, res: Response, next: NextFunction) => {
+// Protects session cookies by validating anti-CSRF headers (X-CSRF-Token / X-Requested-With)
+// and Origin/Referer compliance on state-changing HTTP methods (POST, PUT, DELETE, PATCH).
+const verifyCsrfToken = (req: Request, res: Response, next: NextFunction) => {
   const safeMethods = ["GET", "HEAD", "OPTIONS"];
   if (safeMethods.includes(req.method)) {
     return next();
   }
 
+  const csrfToken = req.headers["x-csrf-token"] || req.headers["x-requested-with"] || req.cookies?.["XSRF-TOKEN"];
   const origin = req.headers.origin || req.headers.referer;
+
+  if (process.env.NODE_ENV === "production" && !csrfToken) {
+    res.status(403);
+    return next(new Error("CSRF token validation failed: Missing anti-CSRF header"));
+  }
 
   if (origin && process.env.NODE_ENV === "production") {
     const isAllowed = allowedOrigins.some((allowed) => allowed && origin.startsWith(allowed));
@@ -119,7 +126,7 @@ const csrfProtection = (req: Request, res: Response, next: NextFunction) => {
   next();
 };
 
-app.use(csrfProtection);
+app.use(verifyCsrfToken);
 
 // Body parsers
 app.use(express.json({ limit: "10kb" }));
