@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:coverage": "node mockCoverage.js"
   },
   "dependencies": {
     "@simplewebauthn/browser": "^13.3.0",
@@ -27,10 +28,12 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
+    "@playwright/test": "^1.62.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@types/react-google-recaptcha": "^2.1.9",
     "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/coverage-v8": "^4.1.10",
     "eslint": "^9.23.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.19",

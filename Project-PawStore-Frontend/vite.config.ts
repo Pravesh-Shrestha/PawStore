@@ -9,4 +9,14 @@ export default defineConfig({
     host: "0.0.0.0",
     port: 5173,
   },
-});
+  test: {
+    environment: "jsdom",
+    include: ["src/__tests__/**/*.test.{ts,tsx}"],
+    exclude: ["tests/**"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "html"],
+      include: ["src/components/**/*.tsx", "src/pages/**/*.tsx"],
+    },
+  },
+} as any);
