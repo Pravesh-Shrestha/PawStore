@@ -43,17 +43,22 @@ const createPaymentIntent = asyncHandler(async (req: Request, res: Response) => 
   const amount = Math.round(order.totalPrice * 100);
 
   try {
-    // Create a PaymentIntent with automatic payment methods
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount,
-      currency: "usd",
-      metadata: {
-        orderId: (order._id as any).toString(),
-        userId: (req.user as any)._id.toString(),
+    // Create a PaymentIntent with automatic payment methods and Idempotency Key
+    const paymentIntent = await stripe.paymentIntents.create(
+      {
+        amount,
+        currency: "usd",
+        metadata: {
+          orderId: (order._id as any).toString(),
+          userId: (req.user as any)._id.toString(),
+        },
+        description: `PawStore Order #${(order._id as any).toString().slice(-8)}`,
+        automatic_payment_methods: { enabled: true },
       },
-      description: `PawStore Order #${(order._id as any).toString().slice(-8)}`,
-      automatic_payment_methods: { enabled: true },
-    });
+      {
+        idempotencyKey: `order_pay_${order._id}`, // Prevents duplicate charges for the same order
+      }
+    );
 
     writeLog(logLevels.INFO, "PAYMENT_INTENT_CREATED", (req.user as any)._id.toString(), {
       orderId: (order._id as any).toString(),
