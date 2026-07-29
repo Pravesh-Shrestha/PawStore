@@ -28,6 +28,7 @@ import cookieParser from "cookie-parser";
 import dbConnect from "./database/db";
 import { notFound, errorHandler } from "./middleware/errorMiddleware";
 import { apiLimiter, publicLimiter } from "./middleware/rateLimiter";
+import { mongoSanitize } from "./middleware/mongoSanitize";
 import { requestLogger } from "./utils/activityLogger";
 
 const PORT = process.env.PORT || 5000;
@@ -54,12 +55,8 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-        fontSrc: ["'self'", "https://fonts.gstatic.com"],
-        imgSrc: ["'self'", "data:", "https:"],
-        connectSrc: ["'self'", "http://localhost:5173", "http://localhost:5174", "http://localhost:3000", "http://localhost:5000", "https:"],
-        objectSrc: ["'none'"],
+        scriptSrc: ["'self'", "https://www.google.com/recaptcha/"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
       },
     },
     strictTransportSecurity: {
@@ -134,6 +131,9 @@ app.use(verifyCsrfToken);
 // Body parsers
 app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
+
+// Universal NoSQL Injection Protection
+app.use(mongoSanitize);
 
 // Logger
 if (process.env.NODE_ENV === "development") {

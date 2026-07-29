@@ -35,7 +35,15 @@ const getAuditLogs = asyncHandler(async (req: Request, res: Response) => {
   const limit = parseInt(req.query.limit as string) || 50;
   const skip = (page - 1) * limit;
 
-  // Build Mongo query filter object
+  // Strict Query Parameter Allowlist
+  const allowedParams = ["page", "limit", "level", "action", "search", "userId", "startDate", "endDate"];
+  for (const param of Object.keys(req.query)) {
+    if (!allowedParams.includes(param)) {
+      res.status(400);
+      throw new Error(`Invalid or unrecognized query parameter: ${param}`);
+    }
+  }
+
   const filter: any = {};
 
   if (req.query.level && typeof req.query.level === "string") {
@@ -47,8 +55,15 @@ const getAuditLogs = asyncHandler(async (req: Request, res: Response) => {
     filter.action = { $regex: safeAction, $options: "i" };
   }
 
-  // [VULN-04 Remediation] Strict NoSQL Query Injection Defense for userId
+  // ✅ FIX: NoSQL Injection Protection for userId
   if (req.query.userId) {
+    // 🚨 Detect object-based injection attempts
+    if (typeof req.query.userId === "object") {
+      res.status(400);
+      throw new Error("Invalid userId parameter format");
+    }
+
+    // ✅ Validate string format
     if (typeof req.query.userId === "string" && /^[0-9a-fA-F]{24}$/.test(req.query.userId)) {
       filter.userId = req.query.userId;
     } else {
