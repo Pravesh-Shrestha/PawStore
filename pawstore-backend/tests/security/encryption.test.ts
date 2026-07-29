@@ -1,4 +1,4 @@
-import { encrypt, decrypt, isEncrypted } from "../utils/encryption";
+import { encrypt, decrypt, isEncrypted } from "../../src/utils/encryption";
 
 describe("Encryption Utility (AES-256-GCM)", () => {
   const secretData = "ThisIsASecret123!";

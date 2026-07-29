@@ -1,4 +1,4 @@
-import { authLimiter, passwordChangeLimiter, apiLimiter } from "../middleware/rateLimiter";
+import { authLimiter, passwordChangeLimiter, apiLimiter } from "../../src/middleware/rateLimiter";
 import { Request, Response, NextFunction } from "express";
 
 describe("Rate Limiting Middleware Security Tests", () => {

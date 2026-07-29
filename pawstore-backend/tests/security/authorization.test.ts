@@ -14,15 +14,15 @@
  */
 
 import jwt from "jsonwebtoken";
-import { protect, admin } from "../middleware/authMiddleware";
-import User from "../models/userModel";
-import { writeLog } from "../utils/activityLogger";
+import { protect, admin } from "../../src/middleware/authMiddleware";
+import User from "../../src/models/userModel";
+import { writeLog } from "../../src/utils/activityLogger";
 import { Request, Response, NextFunction } from "express";
 
 // Mock dependencies
 jest.mock("jsonwebtoken");
-jest.mock("../models/userModel");
-jest.mock("../utils/activityLogger");
+jest.mock("../../src/models/userModel");
+jest.mock("../../src/utils/activityLogger");
 
 describe("Authentication Middleware", () => {
   let mockRequest: Partial<Request>;
@@ -30,6 +30,9 @@ describe("Authentication Middleware", () => {
   let nextFunction: NextFunction;
 
   beforeEach(() => {
+    jest.clearAllMocks();
+    jest.spyOn(console, "error").mockImplementation(() => {});
+
     mockRequest = {
       cookies: {},
       headers: {},
