@@ -151,9 +151,9 @@ const protect = asyncHandler(async (req: Request, res: Response, next: NextFunct
       res.status(401);
       throw new Error("Not authorized, token expired");
     }
-    if (error.message.includes("password") || 
-        error.message.includes("account") || 
-        error.message.includes("Session")) {
+    if (error.message.includes("password") ||
+      error.message.includes("account") ||
+      error.message.includes("Session")) {
       throw error;
     }
     console.error(error);

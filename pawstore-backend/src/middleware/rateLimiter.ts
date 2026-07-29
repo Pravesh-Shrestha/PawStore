@@ -85,7 +85,8 @@ const passwordChangeLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour window
   max: 3,                   // Maximum 3 attempts per hour
   message: {
-    message: "Too many password change attempts, please try again after 1 hour",
+    status: 429,
+    message: "Too many password change attempts. Please try again later.",
   },
   standardHeaders: true,
   legacyHeaders: false,

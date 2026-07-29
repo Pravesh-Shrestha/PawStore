@@ -2,7 +2,8 @@ import express from 'express';
 const router = express.Router();
 
 
-import { authUser,
+import {
+  authUser,
   verifyMFALogin,
   registerUser,
   getUserProfile,
@@ -18,18 +19,19 @@ import { authUser,
   unlockUser,
   logoutUser,
   getPasswordExpiry,
- } from "../controllers/userController";
+} from "../controllers/userController";
 import {
   forgotPassword,
   resetPassword,
   validateResetToken,
 } from "../controllers/passwordResetController";
-import { protect, admin  } from "../middleware/authMiddleware";
-import { authLimiter,
+import { protect, admin } from "../middleware/authMiddleware";
+import {
+  authLimiter,
   mfaLimiter,
   passwordChangeLimiter,
   profileUpdateLimiter,
- } from "../middleware/rateLimiter";
+} from "../middleware/rateLimiter";
 import { verifyCaptcha } from "../middleware/captchaMiddleware";
 
 // Public routes (with rate limiting and CAPTCHA protection)
